@@ -1,25 +1,30 @@
-// ==========================================
-// EXAMORA
-// Main Component Loader
-// ==========================================
+/* =========================================================
+   EXAMORA
+   Main Application JavaScript
+   File: js/app.js
+   ========================================================= */
 
 
-// Load HTML Component
-async function loadComponent(id, file) {
+/* =========================
+   COMPONENT LOADER
+========================= */
 
-    const element = document.getElementById(id);
+async function loadComponent(elementId, componentPath) {
+
+    const element = document.getElementById(elementId);
 
     if (!element) {
-        return;
+        console.error(`Element not found: #${elementId}`);
+        return false;
     }
 
     try {
 
-        const response = await fetch(file);
+        const response = await fetch(componentPath);
 
         if (!response.ok) {
             throw new Error(
-                `Failed to load: ${file}`
+                `Unable to load ${componentPath}`
             );
         }
 
@@ -27,53 +32,74 @@ async function loadComponent(id, file) {
 
         element.innerHTML = html;
 
+        return true;
+
     } catch (error) {
 
         console.error(error);
 
-        element.innerHTML = `
-            <p>
-                Component could not be loaded.
-            </p>
-        `;
+        return false;
+    }
+}
+
+
+/* =========================
+   LOAD COMPONENTS
+========================= */
+
+async function loadComponents() {
+
+    await loadComponent(
+        "header",
+        "components/header.html"
+    );
+
+    await loadComponent(
+        "hero",
+        "components/hero.html"
+    );
+
+    await loadComponent(
+        "category",
+        "components/category.html"
+    );
+
+    await loadComponent(
+        "tests",
+        "components/test.html"
+    );
+
+    await loadComponent(
+        "footer",
+        "components/footer.html"
+    );
+
+    /* Menu Component */
+    const menuLoaded = await loadComponent(
+        "menu",
+        "components/menu.html"
+    );
+
+
+    /* Initialize Menu AFTER menu.html is loaded */
+    if (menuLoaded) {
+
+        initializeMenu();
 
     }
 
 }
 
 
-// ==========================================
-// LOAD COMPONENTS
-// ==========================================
+/* =========================
+   START APPLICATION
+========================= */
 
 document.addEventListener(
     "DOMContentLoaded",
     () => {
 
-        loadComponent(
-            "header",
-            "components/header.html"
-        );
-
-        loadComponent(
-            "hero",
-            "components/hero.html"
-        );
-
-        loadComponent(
-            "category",
-            "components/category.html"
-        );
-
-        loadComponent(
-            "tests",
-            "components/test.html"
-        );
-
-        loadComponent(
-            "footer",
-            "components/footer.html"
-        );
+        loadComponents();
 
     }
 );
