@@ -1,0 +1,118 @@
+<!-- =========================================================
+     EXAMORA
+     Test Language Selection Component
+     File: tests/components/language/language.html
+     ========================================================= -->
+
+<section class="language-section" id="languageSection">
+
+    <div class="language-container">
+
+        <!-- Header -->
+        <div class="language-header">
+
+            <span class="language-badge">
+                Test Setup
+            </span>
+
+            <h1>
+                Select Your Language
+            </h1>
+
+            <p>
+                टेस्ट शुरू करने से पहले अपनी पसंदीदा
+                language select करें।
+            </p>
+
+        </div>
+
+
+        <!-- Language Options -->
+        <div class="language-options">
+
+            <!-- English -->
+            <button
+                type="button"
+                class="language-option"
+                data-language="en"
+                aria-label="Select English"
+            >
+
+                <span class="language-icon">
+                    EN
+                </span>
+
+                <span class="language-info">
+
+                    <strong>
+                        English
+                    </strong>
+
+                    <small>
+                        English
+                    </small>
+
+                </span>
+
+            </button>
+
+
+            <!-- Hindi -->
+            <button
+                type="button"
+                class="language-option"
+                data-language="hi"
+                aria-label="हिन्दी चुनें"
+            >
+
+                <span class="language-icon">
+                    हिं
+                </span>
+
+                <span class="language-info">
+
+                    <strong>
+                        हिन्दी
+                    </strong>
+
+                    <small>
+                        Hindi
+                    </small>
+
+                </span>
+
+            </button>
+
+        </div>
+
+
+        <!-- Selected Language -->
+        <div
+            class="language-selected"
+            id="selectedLanguage"
+            aria-live="polite"
+        >
+            Please select a language
+        </div>
+
+
+        <!-- Continue Button -->
+        <button
+            type="button"
+            class="language-continue"
+            id="languageContinue"
+            disabled
+        >
+            Continue to Test →
+        </button>
+
+
+        <!-- Note -->
+        <p class="language-note">
+            Language select करने के बाद आप test instructions
+            पर जा सकेंगे।
+        </p>
+
+    </div>
+
+</section>
