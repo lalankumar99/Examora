@@ -1,0 +1,368 @@
+/* =========================================================
+   EXAMORA
+   Premium Page Loading Progress
+   File: css/progress.css
+   ========================================================= */
+
+
+/* =========================================================
+   ROOT COLORS
+========================================================= */
+
+:root {
+
+    --progress-blue: #2388ff;
+
+    --progress-cyan: #00d9ff;
+
+    --progress-light: #7defff;
+
+    --progress-glow:
+        rgba(0, 190, 255, 0.85);
+
+}
+
+
+/* =========================================================
+   PROGRESS CONTAINER
+========================================================= */
+
+.page-progress {
+
+    position: fixed;
+
+    top: 0;
+
+    left: 0;
+
+    z-index: 99999;
+
+    width: 100%;
+
+    height: 6px;
+
+    overflow: hidden;
+
+    pointer-events: none;
+
+    background: transparent;
+
+}
+
+
+/* =========================================================
+   PROGRESS BAR
+========================================================= */
+
+.page-progress-bar {
+
+    position: relative;
+
+    width: 0%;
+
+    height: 100%;
+
+    border-radius:
+        0 12px 12px 0;
+
+    background:
+        linear-gradient(
+            90deg,
+            #1769ff 0%,
+            #2388ff 30%,
+            #00c8ff 65%,
+            #72efff 100%
+        );
+
+    box-shadow:
+
+        0 0 5px
+        rgba(35, 136, 255, 0.95),
+
+        0 0 12px
+        rgba(0, 217, 255, 0.9),
+
+        0 0 24px
+        rgba(0, 190, 255, 0.75),
+
+        0 0 42px
+        rgba(0, 160, 255, 0.45);
+
+    transition:
+
+        width 0.28s
+        cubic-bezier(
+            0.22,
+            1,
+            0.36,
+            1
+        ),
+
+        opacity 0.35s ease;
+
+}
+
+
+/* =========================================================
+   MOVING LIGHT
+========================================================= */
+
+.page-progress-bar::after {
+
+    content: "";
+
+    position: absolute;
+
+    top: 0;
+
+    right: 0;
+
+    width: 120px;
+
+    height: 100%;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.85),
+            transparent
+        );
+
+    filter:
+        blur(2px);
+
+    opacity: 0.9;
+
+    animation:
+        progress-shine
+        1.2s
+        ease-in-out
+        infinite;
+
+}
+
+
+/* =========================================================
+   LOADING STATE
+========================================================= */
+
+.page-progress.loading {
+
+    opacity: 1;
+
+}
+
+
+.page-progress.loading
+.page-progress-bar {
+
+    width: 72%;
+
+}
+
+
+/* =========================================================
+   ACTIVE LOADING ANIMATION
+========================================================= */
+
+.page-progress.loading
+.page-progress-bar::before {
+
+    content: "";
+
+    position: absolute;
+
+    top: -2px;
+
+    right: 0;
+
+    width: 70px;
+
+    height: 10px;
+
+    border-radius: 50%;
+
+    background:
+        rgba(
+            125,
+            239,
+            255,
+            0.9
+        );
+
+    filter:
+        blur(6px);
+
+}
+
+
+/* =========================================================
+   COMPLETE STATE
+========================================================= */
+
+.page-progress.complete {
+
+    opacity: 1;
+
+}
+
+
+.page-progress.complete
+.page-progress-bar {
+
+    width: 100%;
+
+    opacity: 0;
+
+}
+
+
+/* =========================================================
+   SHINE ANIMATION
+========================================================= */
+
+@keyframes progress-shine {
+
+    0% {
+
+        transform:
+            translateX(70px);
+
+        opacity: 0;
+
+    }
+
+    25% {
+
+        opacity: 0.9;
+
+    }
+
+    70% {
+
+        opacity: 0.8;
+
+    }
+
+    100% {
+
+        transform:
+            translateX(-120px);
+
+        opacity: 0;
+
+    }
+
+}
+
+
+/* =========================================================
+   EXTRA GLOW ANIMATION
+========================================================= */
+
+@keyframes progress-glow {
+
+    0% {
+
+        filter:
+            brightness(1);
+
+    }
+
+    50% {
+
+        filter:
+            brightness(1.35);
+
+    }
+
+    100% {
+
+        filter:
+            brightness(1);
+
+    }
+
+}
+
+
+.page-progress.loading
+.page-progress-bar {
+
+    animation:
+        progress-glow
+        1.6s
+        ease-in-out
+        infinite;
+
+}
+
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media (max-width: 600px) {
+
+    .page-progress {
+
+        height: 5px;
+
+    }
+
+    .page-progress-bar {
+
+        border-radius:
+            0 10px 10px 0;
+
+    }
+
+}
+
+
+/* =========================================================
+   LARGE SCREENS
+========================================================= */
+
+@media (min-width: 1200px) {
+
+    .page-progress {
+
+        height: 7px;
+
+    }
+
+    .page-progress-bar::after {
+
+        width: 150px;
+
+    }
+
+}
+
+
+/* =========================================================
+   REDUCED MOTION
+========================================================= */
+
+@media (
+    prefers-reduced-motion: reduce
+) {
+
+    .page-progress-bar {
+
+        animation: none;
+
+        transition:
+            width 0.1s linear;
+
+    }
+
+    .page-progress-bar::after {
+
+        animation: none;
+
+    }
+
+}
