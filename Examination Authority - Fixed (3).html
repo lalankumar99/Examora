@@ -1,0 +1,756 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Examination Authority</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- PWA Setup (Dynamic Manifest & Service Worker) -->
+    <script>
+        const manifest = {
+            "name": "Examination Authority",
+            "short_name": "ExamAuth",
+            "start_url": ".",
+            "display": "standalone",
+            "background_color": "#060a13",
+            "theme_color": "#0891b2",
+            "icons": [
+                {
+                    "src": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMDg5MWIyIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PHBhdGggZD0iTTEyIDJMMiAxMkwxMiAyMkwyMiAxMkwxMiAyWiIvPjwvc3ZnPg==",
+                    "sizes": "192x192",
+                    "type": "image/svg+xml"
+                }
+            ]
+        };
+        const manifestBlob = new Blob([JSON.stringify(manifest)], {type: 'application/manifest+json'});
+        const manifestUrl = URL.createObjectURL(manifestBlob);
+        document.head.insertAdjacentHTML('beforeend', `<link rel="manifest" href="${manifestUrl}">`);
+
+        const swCode = `
+            self.addEventListener('install', (e) => self.skipWaiting());
+            self.addEventListener('activate', (e) => self.clients.claim());
+            self.addEventListener('fetch', (e) => {});
+        `;
+        const swBlob = new Blob([swCode], {type: 'application/javascript'});
+        const swUrl = URL.createObjectURL(swBlob);
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register(swUrl).catch(err => console.log('SW Registration failed:', err));
+        }
+    </script>
+
+    <style>
+        /* ग्लास मोर्फिज्म (Glassmorphism) */
+        body {
+            background-color: #060a13;
+            color: #e2e8f0;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            overflow-x: hidden;
+            user-select: none; /* टेक्स्ट सेलेक्शन डिसएबल (Anti-copy) */
+        }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(30, 41, 59, 0.8);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+        }
+        .view-section { display: none; }
+        .view-section.active { display: flex; animation: fadeIn 0.4s ease-out forwards; }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(15px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* सर्टिफिकेट फॉन्ट */
+        .cert-font { font-family: 'Times New Roman', Times, serif; }
+        .cert-border {
+            position: relative;
+            background: #060a13;
+            background-image: radial-gradient(circle at center, #0f172a 0%, #060a13 100%);
+        }
+        .cert-border::before {
+            content: "";
+            position: absolute;
+            top: 10px; left: 10px; right: 10px; bottom: 10px;
+            border: 2px solid rgba(34, 211, 238, 0.3);
+            pointer-events: none;
+        }
+        
+        /* कस्टम स्क्रॉलबार */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col" oncontextmenu="return false;">
+
+    <!-- हैडर / Navbar -->
+    <header class="border-b border-cyan-900/50 bg-[#0a1122]/90 backdrop-blur-md px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between sticky top-0 z-50 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+        <div class="flex items-center gap-3">
+            <div class="p-2 bg-cyan-500/10 rounded-lg border border-cyan-500/30 text-cyan-400 shadow-[0_0_10px_rgba(8,145,178,0.2)]">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 12L12 22L22 12L12 2Z"/></svg>
+            </div>
+            <h1 id="header-title" class="text-lg sm:text-xl font-bold tracking-tight text-white">Examination Authority</h1>
+        </div>
+        
+        <div class="flex items-center gap-3">
+            <button id="pwa-install-btn" class="hidden px-3 py-1.5 text-xs sm:text-sm font-semibold bg-cyan-600/20 text-cyan-400 border border-cyan-500/30 rounded-lg hover:bg-cyan-600/40 transition-colors">
+                ⬇ इंस्टॉल करें
+            </button>
+            <div id="user-info" class="hidden items-center gap-3 text-sm font-medium">
+                <span id="user-name-display" class="bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700 hidden sm:block"></span>
+                <button id="logout-btn" class="p-2 hover:bg-red-500/20 hover:text-red-400 rounded-full transition-colors text-slate-400">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- मुख्य कंटेंट एरिया -->
+    <main class="flex-1 w-full max-w-6xl mx-auto p-4 sm:p-6 flex flex-col items-center justify-center">
+
+        <!-- 1. भाषा चयन (Language Selection) -->
+        <div id="view-lang" class="view-section active flex-col items-center w-full max-w-md glass-card p-8 rounded-3xl text-center shadow-[0_0_40px_rgba(8,145,178,0.1)]">
+            <svg class="w-16 h-16 text-cyan-400 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"></path></svg>
+            <h2 class="text-2xl font-bold mb-2 text-white">Select Language</h2>
+            <p class="text-slate-400 mb-8">अपनी भाषा चुनें</p>
+            <div class="space-y-4 w-full">
+                <button onclick="selectLanguage('en')" class="w-full py-4 px-6 rounded-xl border border-slate-700 bg-slate-800/60 hover:bg-cyan-600 hover:text-white hover:border-cyan-500/50 transition-all text-xl font-medium shadow-lg">English</button>
+                <button onclick="selectLanguage('hi')" class="w-full py-4 px-6 rounded-xl border border-slate-700 bg-slate-800/60 hover:bg-cyan-600 hover:text-white hover:border-cyan-500/50 transition-all text-xl font-medium shadow-lg">हिन्दी (Hindi)</button>
+            </div>
+        </div>
+
+        <!-- 2. लॉगिन स्क्रीन (Login View) -->
+        <div id="view-login" class="view-section flex-col items-center w-full max-w-md glass-card p-8 rounded-3xl shadow-[0_0_40px_rgba(8,145,178,0.1)]">
+            <div class="flex gap-2 w-full mb-8 p-1.5 bg-slate-900 rounded-xl border border-slate-800">
+                <button id="tab-student" onclick="setRole('STUDENT')" class="flex-1 py-2.5 rounded-lg text-sm font-bold transition-all bg-cyan-600 text-white shadow-md">Student / छात्र</button>
+                <button id="tab-authority" onclick="setRole('AUTHORITY')" class="flex-1 py-2.5 rounded-lg text-sm font-bold transition-all text-slate-400 hover:text-slate-200">Authority / प्राधिकरण</button>
+            </div>
+            <div class="w-full space-y-6">
+                <div>
+                    <label id="lbl-name" class="block text-sm font-medium text-slate-400 mb-2">Enter your full name</label>
+                    <input type="text" id="login-name" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-900 transition-all text-lg shadow-inner" placeholder="John Doe">
+                </div>
+                <button onclick="handleLogin()" id="btn-login" class="w-full py-4 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white font-bold text-lg transition-all shadow-[0_0_20px_rgba(8,145,178,0.4)]">Proceed</button>
+            </div>
+        </div>
+
+        <!-- 3. निर्देश स्क्रीन (Instructions View) -->
+        <div id="view-instructions" class="view-section flex-col w-full max-w-2xl glass-card p-6 sm:p-10 rounded-3xl">
+            <div class="flex items-center gap-4 mb-8 pb-6 border-b border-slate-800">
+                <div class="p-3 bg-yellow-500/10 rounded-full border border-yellow-500/20">
+                    <svg class="w-8 h-8 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <h2 id="inst-title" class="text-2xl sm:text-3xl font-bold text-white">Examination Rules & Instructions</h2>
+            </div>
+            <ul class="space-y-4 mb-10" id="inst-list">
+                <!-- नियम JS द्वारा डाले जाएंगे -->
+            </ul>
+            <button onclick="acceptAndStartExam()" id="btn-accept" class="w-full py-4 sm:py-5 rounded-2xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-lg transition-all shadow-[0_0_20px_rgba(8,145,178,0.4)] hover:shadow-[0_0_30px_rgba(8,145,178,0.6)] flex items-center justify-center gap-3">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                I accept the rules and am ready to start
+            </button>
+        </div>
+
+        <!-- 4. मुख्य परीक्षा स्क्रीन (Active Exam View) -->
+        <div id="view-exam" class="view-section flex-col w-full max-w-4xl w-full">
+            <div class="flex justify-between items-center mb-6 sm:mb-8 w-full">
+                <div class="flex gap-3 sm:gap-4 items-center">
+                    <div class="bg-slate-800/80 backdrop-blur px-4 py-2 sm:px-5 sm:py-3 rounded-xl border border-slate-700 flex items-center gap-2 sm:gap-3 shadow-lg">
+                        <span id="lbl-question" class="text-slate-400 text-xs sm:text-sm font-semibold uppercase tracking-wider">Question</span>
+                        <span class="text-xl sm:text-2xl font-black text-white"><span id="exam-q-num">1</span> <span class="text-slate-500 text-sm sm:text-base font-bold">/ 10</span></span>
+                    </div>
+                    <!-- वॉयस म्यूट/अनम्यूट -->
+                    <button onclick="toggleVoice()" id="btn-voice" class="p-3 bg-slate-800/80 hover:bg-slate-700 rounded-xl border border-slate-700 text-cyan-400 transition-colors shadow-lg">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5 10H7L11 6V18L7 14H5V10Z"></path></svg>
+                    </button>
+                </div>
+                
+                <!-- स्मार्ट टाइमर बॉक्स (हरा -> पीला -> लाल ब्लिंक) -->
+                <div id="timer-box" class="flex items-center gap-2 sm:gap-3 px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl border shadow-lg transition-all duration-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span id="exam-timer" class="font-mono text-2xl sm:text-3xl font-black tracking-widest">30s</span>
+                </div>
+            </div>
+
+            <!-- प्रश्न कार्ड -->
+            <div class="glass-card p-6 sm:p-10 rounded-3xl mb-8 w-full border-t-2 border-t-cyan-500/50 shadow-[0_20px_50px_rgba(0,0,0,0.5)]">
+                <h2 id="exam-q-text" class="text-2xl sm:text-3xl md:text-4xl font-bold text-white leading-tight mb-10 drop-shadow-md">
+                    <!-- प्रश्न -->
+                </h2>
+                <div id="exam-options" class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                    <!-- विकल्प JS द्वारा -->
+                </div>
+            </div>
+            
+            <!-- प्रोग्रेस बार -->
+            <div class="w-full bg-slate-800/80 h-3 rounded-full overflow-hidden shadow-inner p-0.5 border border-slate-700">
+                <div id="exam-progress" class="bg-gradient-to-r from-cyan-600 to-blue-500 h-full rounded-full transition-all duration-500 ease-out shadow-[0_0_10px_rgba(8,145,178,0.8)]" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <!-- 5. अंतिम पुष्टि स्क्रीन (Final Confirmation Screen) -->
+        <div id="view-confirm-submit" class="view-section flex-col items-center w-full max-w-lg glass-card p-10 rounded-3xl text-center shadow-[0_0_50px_rgba(8,145,178,0.2)]">
+            <div class="w-24 h-24 bg-cyan-500/10 rounded-full flex items-center justify-center mb-6 border border-cyan-500/30 text-cyan-400">
+                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+            </div>
+            <h2 id="confirm-title" class="text-3xl font-bold text-white mb-4">Almost Done!</h2>
+            <p id="confirm-desc" class="text-slate-300 text-lg mb-10 leading-relaxed"></p>
+            <button onclick="completeExam()" id="btn-final-submit" class="w-full py-4 rounded-xl bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white font-bold text-xl transition-all shadow-[0_0_20px_rgba(16,185,129,0.4)]">
+                Submit Exam
+            </button>
+        </div>
+
+        <!-- 6. परिणाम / सर्टिफिकेट स्क्रीन (Result / Certificate View) -->
+        <div id="view-result" class="view-section flex-col items-center w-full max-w-2xl text-center">
+            
+            <!-- टर्मिनेटेड/फेल UI -->
+            <div id="res-terminated-container" class="hidden glass-card p-8 rounded-3xl w-full max-w-md mx-auto shadow-[0_0_50px_rgba(239,68,68,0.15)] border-red-900/50">
+                <div class="w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6 border-4 bg-red-500/10 border-red-500/20 text-red-500 shadow-[0_0_30px_rgba(239,68,68,0.4)]">
+                    <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                </div>
+                <h2 id="res-title" class="text-2xl sm:text-3xl font-bold text-white mb-4">Examination Terminated</h2>
+                <p id="res-msg" class="text-red-200 mb-6 p-4 rounded-xl bg-red-900/40 border border-red-500/30 text-lg"></p>
+                <div id="res-log" class="text-sm font-mono text-red-400 bg-black/50 p-4 rounded-lg mb-6 w-full border border-red-900/80 break-words"></div>
+                <button id="btn-retake" onclick="resetToInstructions()" class="hidden w-full py-4 mt-4 rounded-xl bg-cyan-600 hover:bg-cyan-500 text-white font-bold text-lg transition-colors">Start Again</button>
+            </div>
+
+            <!-- सर्टिफिकेट UI (पास होने पर) -->
+            <div id="res-certificate-container" class="hidden w-full">
+                <div class="cert-border p-8 sm:p-12 rounded-2xl shadow-[0_0_50px_rgba(8,145,178,0.2)] border-4 border-cyan-900">
+                    <div class="mx-auto w-20 h-20 mb-6 text-yellow-500 bg-yellow-500/10 rounded-full flex items-center justify-center border border-yellow-500/30 shadow-[0_0_30px_rgba(234,179,8,0.3)]">
+                        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                    </div>
+                    
+                    <h2 class="text-2xl sm:text-4xl font-bold text-white tracking-widest uppercase mb-2 cert-font drop-shadow-md">Certificate of Completion</h2>
+                    <p class="text-cyan-400/80 tracking-widest mb-10 text-sm sm:text-base font-semibold">EXAMINATION AUTHORITY</p>
+                    
+                    <p class="text-slate-400 mb-4 text-lg italic cert-font">This is to proudly certify that</p>
+                    <h3 id="cert-name" class="text-4xl sm:text-5xl font-bold text-cyan-300 mb-8 cert-font capitalize drop-shadow-[0_0_10px_rgba(34,211,238,0.4)]">Student Name</h3>
+                    
+                    <p class="text-slate-400 mb-8 text-lg italic cert-font">has successfully completed the examination with a final score of</p>
+                    <div class="text-5xl sm:text-7xl font-black text-white mb-12 drop-shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+                        <span id="cert-score" class="text-cyan-400">8</span><span class="text-3xl sm:text-4xl text-slate-500 font-bold">/10</span>
+                    </div>
+                    
+                    <div class="flex justify-between items-end border-t border-slate-700/50 pt-6 mt-8 px-4 text-sm sm:text-base text-slate-400 font-mono">
+                        <div>Date: <span id="cert-date" class="text-white font-bold"></span></div>
+                        <div class="text-right">
+                            <div class="border-b border-slate-500 w-32 mx-auto mb-1 opacity-50"></div>
+                            Authorized Signatory
+                        </div>
+                    </div>
+                </div>
+                <button onclick="window.location.reload()" class="mt-8 px-8 py-3 bg-slate-800 hover:bg-slate-700 text-white rounded-full font-bold border border-slate-700 transition-colors">Exit Application</button>
+            </div>
+        </div>
+
+        <!-- 7. प्राधिकरण डैशबोर्ड (Authority Dashboard View) -->
+        <div id="view-dashboard" class="view-section flex-col w-full">
+            <div class="flex flex-wrap items-center justify-between mb-8 gap-4 w-full bg-slate-900/50 p-6 rounded-2xl border border-slate-800">
+                <div>
+                    <h2 id="dash-title" class="text-2xl sm:text-3xl font-black text-white mb-3">Authority Dashboard</h2>
+                    <div class="flex gap-4">
+                        <span id="dash-active-cnt" class="px-4 py-1.5 bg-cyan-950 text-cyan-400 border border-cyan-900/50 rounded-full text-sm font-bold shadow-[0_0_10px_rgba(8,145,178,0.2)]">● Active: 0</span>
+                        <span id="dash-term-cnt" class="px-4 py-1.5 bg-red-950 text-red-400 border border-red-900/50 rounded-full text-sm font-bold shadow-[0_0_10px_rgba(239,68,68,0.2)]">● Terminated: 0</span>
+                    </div>
+                </div>
+                <button onclick="window.location.reload()" class="px-6 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-white font-semibold transition-colors border border-slate-700">Refresh Data</button>
+            </div>
+            <div class="glass-card rounded-2xl overflow-hidden w-full shadow-2xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[700px]">
+                        <thead>
+                            <tr class="border-b border-slate-700 bg-slate-900" id="dash-th">
+                                <th class="p-5 text-sm font-bold text-slate-300">Student Name</th>
+                                <th class="p-5 text-sm font-bold text-slate-300">Start Time</th>
+                                <th class="p-5 text-sm font-bold text-slate-300">Status</th>
+                                <th class="p-5 text-sm font-bold text-slate-300">Action / Score</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dash-tbody" class="divide-y divide-slate-800/80"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- कस्टम मोडल -->
+    <div id="custom-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-[100] hidden items-center justify-center p-4">
+        <div class="bg-slate-900 border border-cyan-900 p-8 rounded-3xl max-w-sm w-full text-center shadow-[0_0_50px_rgba(8,145,178,0.3)] transform scale-95 transition-transform duration-200" id="modal-content">
+            <h3 id="modal-title" class="text-2xl font-bold text-white mb-3">Alert</h3>
+            <p id="modal-desc" class="text-slate-300 mb-8 text-lg"></p>
+            <button onclick="closeModal()" class="w-full py-3 bg-cyan-600 hover:bg-cyan-500 text-white rounded-xl font-bold text-lg shadow-[0_0_15px_rgba(8,145,178,0.4)]">OK / ठीक है</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, setDoc, onSnapshot, updateDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- फायरबेस सेटअप ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' 
+            ? JSON.parse(__firebase_config) 
+            : { apiKey: "demo", projectId: "demo-project" };
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'exam-platform-pro';
+
+        // --- ग्लोबल स्टेट ---
+        window.appState = {
+            lang: null, role: 'STUDENT', user: null, dbUser: null,
+            activeAttempt: null, examTimer: null, examQuestions: [],
+            currentQIndex: 0, timeLeft: 30, score: 0, isMuted: false,
+            voiceSynth: window.speechSynthesis, examActive: false,
+            attempts: [], users: [], isFullscreenSupported: true
+        };
+
+        // --- 15 भौतिक विज्ञान (ELECTRICITY) प्रश्न ---
+        const QUESTION_BANK = [
+            { id: "q1", text: { en: "According to Ohm's Law, which formula is correct?", hi: "ओम के नियम के अनुसार, कौन सा सूत्र सही है?" }, options: { en: [ {text: "V = IR", correct: true}, {text: "I = VR", correct: false}, {text: "R = VI", correct: false}, {text: "V = I/R", correct: false} ], hi: [ {text: "V = IR", correct: true}, {text: "I = VR", correct: false}, {text: "R = VI", correct: false}, {text: "V = I/R", correct: false} ] } },
+            { id: "q2", text: { en: "What is the SI unit of electric current?", hi: "विद्युत धारा (Electric Current) की SI इकाई क्या है?" }, options: { en: [ {text: "Ampere", correct: true}, {text: "Volt", correct: false}, {text: "Ohm", correct: false}, {text: "Watt", correct: false} ], hi: [ {text: "एम्पीयर (Ampere)", correct: true}, {text: "वोल्ट (Volt)", correct: false}, {text: "ओम (Ohm)", correct: false}, {text: "वॉट (Watt)", correct: false} ] } },
+            { id: "q3", text: { en: "Which instrument is used to measure electric current?", hi: "विद्युत धारा मापने के लिए किस यंत्र का उपयोग किया जाता है?" }, options: { en: [ {text: "Ammeter", correct: true}, {text: "Voltmeter", correct: false}, {text: "Galvanometer", correct: false}, {text: "Potentiometer", correct: false} ], hi: [ {text: "एमीटर (Ammeter)", correct: true}, {text: "वोल्टमीटर (Voltmeter)", correct: false}, {text: "गैल्वेनोमीटर (Galvanometer)", correct: false}, {text: "पोटेंशियोमीटर (Potentiometer)", correct: false} ] } },
+            { id: "q4", text: { en: "The unit of electrical resistance is:", hi: "विद्युत प्रतिरोध (Resistance) की इकाई है:" }, options: { en: [ {text: "Ohm", correct: true}, {text: "Joule", correct: false}, {text: "Coulomb", correct: false}, {text: "Farad", correct: false} ], hi: [ {text: "ओम (Ohm)", correct: true}, {text: "जूल (Joule)", correct: false}, {text: "कूलॉम (Coulomb)", correct: false}, {text: "फैराड (Farad)", correct: false} ] } },
+            { id: "q5", text: { en: "What is the formula for Electrical Power?", hi: "विद्युत शक्ति (Power) का सूत्र क्या है?" }, options: { en: [ {text: "P = VI", correct: true}, {text: "P = V/I", correct: false}, {text: "P = I/V", correct: false}, {text: "P = V+I", correct: false} ], hi: [ {text: "P = VI", correct: true}, {text: "P = V/I", correct: false}, {text: "P = I/V", correct: false}, {text: "P = V+I", correct: false} ] } },
+            { id: "q6", text: { en: "The commercial unit of electrical energy is:", hi: "विद्युत ऊर्जा की व्यावसायिक इकाई (Commercial Unit) क्या है?" }, options: { en: [ {text: "Kilowatt-hour (kWh)", correct: true}, {text: "Joule", correct: false}, {text: "Watt", correct: false}, {text: "Volt-ampere", correct: false} ], hi: [ {text: "किलोवाट-घंटा (kWh)", correct: true}, {text: "जूल (Joule)", correct: false}, {text: "वॉट (Watt)", correct: false}, {text: "वोल्ट-एम्पीयर (VA)", correct: false} ] } },
+            { id: "q7", text: { en: "The filament of an electric bulb is made of:", hi: "विद्युत बल्ब का फिलामेंट किस धातु का बना होता है?" }, options: { en: [ {text: "Tungsten", correct: true}, {text: "Copper", correct: false}, {text: "Aluminum", correct: false}, {text: "Iron", correct: false} ], hi: [ {text: "टंगस्टन (Tungsten)", correct: true}, {text: "तांबा (Copper)", correct: false}, {text: "एल्युमिनियम (Aluminum)", correct: false}, {text: "लोहा (Iron)", correct: false} ] } },
+            { id: "q8", text: { en: "Two resistors of 2Ω and 3Ω are connected in series. Total resistance is:", hi: "2Ω और 3Ω के दो प्रतिरोधक श्रेणीक्रम (Series) में जुड़े हैं। कुल प्रतिरोध क्या होगा?" }, options: { en: [ {text: "5Ω", correct: true}, {text: "1Ω", correct: false}, {text: "6Ω", correct: false}, {text: "1.2Ω", correct: false} ], hi: [ {text: "5Ω", correct: true}, {text: "1Ω", correct: false}, {text: "6Ω", correct: false}, {text: "1.2Ω", correct: false} ] } },
+            { id: "q9", text: { en: "Rate of flow of electric charge is called:", hi: "विद्युत आवेश (Charge) के प्रवाह की दर को क्या कहते हैं?" }, options: { en: [ {text: "Electric Current", correct: true}, {text: "Electric Potential", correct: false}, {text: "Resistance", correct: false}, {text: "Capacitance", correct: false} ], hi: [ {text: "विद्युत धारा (Electric Current)", correct: true}, {text: "विद्युत विभव (Potential)", correct: false}, {text: "प्रतिरोध (Resistance)", correct: false}, {text: "धारिता (Capacitance)", correct: false} ] } },
+            { id: "q10", text: { en: "Charge on one electron is approximately:", hi: "एक इलेक्ट्रॉन पर लगभग कितना आवेश (Charge) होता है?" }, options: { en: [ {text: "1.6 × 10^-19 C", correct: true}, {text: "1.6 × 10^19 C", correct: false}, {text: "9.1 × 10^-31 C", correct: false}, {text: "1.0 C", correct: false} ], hi: [ {text: "1.6 × 10^-19 C", correct: true}, {text: "1.6 × 10^19 C", correct: false}, {text: "9.1 × 10^-31 C", correct: false}, {text: "1.0 C", correct: false} ] } },
+            { id: "q11", text: { en: "Which property of a wire does NOT affect its resistance?", hi: "तार का कौन सा गुण उसके प्रतिरोध (Resistance) को प्रभावित नहीं करता है?" }, options: { en: [ {text: "Color", correct: true}, {text: "Length", correct: false}, {text: "Area of cross-section", correct: false}, {text: "Material", correct: false} ], hi: [ {text: "रंग (Color)", correct: true}, {text: "लंबाई (Length)", correct: false}, {text: "अनुप्रस्थ काट का क्षेत्रफल (Area)", correct: false}, {text: "पदार्थ (Material)", correct: false} ] } },
+            { id: "q12", text: { en: "A voltmeter is always connected in ___ with the circuit.", hi: "वोल्टमीटर को परिपथ (Circuit) में हमेशा किस क्रम में जोड़ा जाता है?" }, options: { en: [ {text: "Parallel", correct: true}, {text: "Series", correct: false}, {text: "Any way", correct: false}, {text: "None of these", correct: false} ], hi: [ {text: "समानांतर क्रम (Parallel)", correct: true}, {text: "श्रेणीक्रम (Series)", correct: false}, {text: "किसी भी तरह", correct: false}, {text: "इनमें से कोई नहीं", correct: false} ] } },
+            { id: "q13", text: { en: "If length of a wire is doubled, its resistance becomes:", hi: "यदि किसी तार की लंबाई दोगुनी कर दी जाए, तो उसका प्रतिरोध क्या होगा?" }, options: { en: [ {text: "Doubled", correct: true}, {text: "Halved", correct: false}, {text: "Four times", correct: false}, {text: "Remains same", correct: false} ], hi: [ {text: "दोगुना (Doubled)", correct: true}, {text: "आधा (Halved)", correct: false}, {text: "चार गुना", correct: false}, {text: "समान रहेगा", correct: false} ] } },
+            { id: "q14", text: { en: "Materials that do not allow electric current to pass through them are:", hi: "वे पदार्थ जो विद्युत धारा को अपने से प्रवाहित नहीं होने देते, कहलाते हैं:" }, options: { en: [ {text: "Insulators", correct: true}, {text: "Conductors", correct: false}, {text: "Semiconductors", correct: false}, {text: "Superconductors", correct: false} ], hi: [ {text: "इन्सुलेटर / कुचालक (Insulators)", correct: true}, {text: "चालक (Conductors)", correct: false}, {text: "अर्धचालक (Semiconductors)", correct: false}, {text: "अतिचालक (Superconductors)", correct: false} ] } },
+            { id: "q15", text: { en: "The direction of conventional electric current is:", hi: "पारंपरिक विद्युत धारा की दिशा क्या मानी जाती है?" }, options: { en: [ {text: "Positive to Negative", correct: true}, {text: "Negative to Positive", correct: false}, {text: "Direction of electrons", correct: false}, {text: "Random", correct: false} ], hi: [ {text: "धनात्मक से ऋणात्मक (+ से -)", correct: true}, {text: "ऋणात्मक से धनात्मक (- से +)", correct: false}, {text: "इलेक्ट्रॉनों की दिशा", correct: false}, {text: "यादृच्छिक (Random)", correct: false} ] } }
+        ];
+
+        // --- भाषा अनुवाद (Translations) ---
+        const i18n = {
+            en: {
+                headerTitle: "Examination Authority", studentBtn: "Student", authBtn: "Authority",
+                enterName: "Enter your full name", proceed: "Proceed to System", instTitle: "Examination Rules & Strict Integrity Policy",
+                rules: [
+                    "SECURITY WARNING: This exam is actively monitored.",
+                    "Any use of external voice assistants will cause a focus-loss and IMMEDIATE TERMINATION.",
+                    "Leaving fullscreen or switching tabs = TERMINATION.",
+                    "Opening Developer Tools or Copying is strictly prohibited.",
+                    "10 Questions total. 30 Seconds per question. The timer turns RED when 5s remain.",
+                    "Auto-Next: The system will automatically jump to the next question if the timer hits 0."
+                ],
+                acceptStart: "I accept and acknowledge the strict rules", question: "Question",
+                termTitle: "Examination Terminated", termMsg: "Integrity violation detected.",
+                startAgain: "Return to Instructions", dashTitle: "Authority Dashboard",
+                thName: "Student Name", thTime: "Start Time", thStat: "Status", thAct: "Action / Score",
+                active: "ACTIVE", term: "TERMINATED", comp: "COMPLETED", authReq: "Authorize Retake", authorized: "Authorized",
+                almostDone: "Examination Finished!",
+                confirmDesc: "You have completed all 10 questions. Click the button below to submit your exam and receive your certificate.",
+                finalSubmitBtn: "Submit Exam"
+            },
+            hi: {
+                headerTitle: "परीक्षा प्राधिकरण (SECURE)", studentBtn: "छात्र (Student)", authBtn: "अधिकारी (Authority)",
+                enterName: "अपना पूरा नाम दर्ज करें", proceed: "सिस्टम में प्रवेश करें", instTitle: "कठोर परीक्षा नियम और सुरक्षा नीति",
+                rules: [
+                    "सुरक्षा चेतावनी: यह परीक्षा पूरी तरह से मॉनिटर की जा रही है।",
+                    "किसी भी बाहरी वॉयस असिस्टेंट के इस्तेमाल से फोकस हटेगा और परीक्षा तुरंत समाप्त हो जाएगी।",
+                    "फुलस्क्रीन से हटने या टैब बदलने पर परीक्षा TERMINATE कर दी जाएगी।",
+                    "डेवलपर टूल्स खोलना, कॉपी करना सख्त मना है।",
+                    "कुल 10 प्रश्न। हर प्रश्न के लिए 30 सेकंड। 5 सेकंड बचने पर टाइमर लाल हो जाएगा।",
+                    "ऑटो-नेक्स्ट: यदि टाइमर 0 हो जाता है, तो सिस्टम बिना बटन दबाए अपने आप अगले प्रश्न पर चला जाएगा।"
+                ],
+                acceptStart: "मैं सभी कठोर नियमों को स्वीकार करता हूँ", question: "प्रश्न (Question)",
+                termTitle: "परीक्षा समाप्त कर दी गई", termMsg: "सुरक्षा नियमों का उल्लंघन पाया गया है।",
+                startAgain: "निर्देश पृष्ठ पर लौटें", dashTitle: "प्राधिकरण डैशबोर्ड",
+                thName: "छात्र का नाम", thTime: "प्रारंभ समय", thStat: "स्थिति", thAct: "कार्रवाई / अंक",
+                active: "सक्रिय (ACTIVE)", term: "समाप्त (TERMINATED)", comp: "पूर्ण (COMPLETED)", authReq: "पुनः अनुमति दें", authorized: "अनुमति दी गई",
+                almostDone: "परीक्षा पूरी हुई!",
+                confirmDesc: "आपने सभी 10 प्रश्नों को पूरा कर लिया है। अपनी परीक्षा जमा करने और प्रमाणपत्र प्राप्त करने के लिए नीचे दिए गए बटन पर क्लिक करें।",
+                finalSubmitBtn: "परीक्षा जमा करें (Submit)"
+            }
+        };
+
+        // --- यूटिलिटी ---
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        window.showCustomModal = (title, desc) => {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            const m = document.getElementById('custom-modal');
+            m.classList.remove('hidden'); m.classList.add('flex');
+            setTimeout(() => document.getElementById('modal-content').classList.remove('scale-95'), 10);
+        };
+        window.closeModal = () => {
+            document.getElementById('modal-content').classList.add('scale-95');
+            setTimeout(() => {
+                const m = document.getElementById('custom-modal');
+                m.classList.add('hidden'); m.classList.remove('flex');
+            }, 200);
+        };
+
+        function switchView(viewId) {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
+            document.getElementById(viewId).classList.add('active');
+        }
+
+        function updateUItext() {
+            const t = i18n[window.appState.lang];
+            document.getElementById('header-title').innerText = t.headerTitle;
+            document.getElementById('tab-student').innerText = t.studentBtn;
+            document.getElementById('tab-authority').innerText = t.authBtn;
+            document.getElementById('lbl-name').innerText = t.enterName;
+            document.getElementById('btn-login').innerText = t.proceed;
+            
+            document.getElementById('inst-title').innerText = t.instTitle;
+            const ul = document.getElementById('inst-list');
+            ul.innerHTML = '';
+            t.rules.forEach(rule => {
+                ul.innerHTML += `<li class="flex gap-4 p-4 rounded-xl bg-slate-800/80 border border-slate-700 shadow-md">
+                    <div class="mt-0.5 text-yellow-500"><svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg></div>
+                    <p class="text-slate-200 text-lg font-medium leading-relaxed">${rule}</p></li>`;
+            });
+            document.getElementById('btn-accept').innerHTML = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg> ${t.acceptStart}`;
+            document.getElementById('lbl-question').innerText = t.question;
+            
+            document.getElementById('dash-title').innerText = t.dashTitle;
+            document.getElementById('dash-th').innerHTML = `<th class="p-5">${t.thName}</th><th class="p-5">${t.thTime}</th><th class="p-5">${t.thStat}</th><th class="p-5">${t.thAct}</th>`;
+
+            document.getElementById('confirm-title').innerText = t.almostDone;
+            document.getElementById('confirm-desc').innerText = t.confirmDesc;
+            document.getElementById('btn-final-submit').innerText = t.finalSubmitBtn;
+        }
+
+        window.selectLanguage = (lang) => { window.appState.lang = lang; updateUItext(); switchView('view-login'); };
+        window.setRole = (role) => {
+            window.appState.role = role;
+            const tS = document.getElementById('tab-student');
+            const tA = document.getElementById('tab-authority');
+            if(role === 'STUDENT') {
+                tS.className = "flex-1 py-2.5 rounded-lg text-sm font-bold transition-all bg-cyan-600 text-white shadow-md";
+                tA.className = "flex-1 py-2.5 rounded-lg text-sm font-bold transition-all text-slate-400 hover:text-slate-200";
+            } else {
+                tA.className = "flex-1 py-2.5 rounded-lg text-sm font-bold transition-all bg-cyan-600 text-white shadow-md";
+                tS.className = "flex-1 py-2.5 rounded-lg text-sm font-bold transition-all text-slate-400 hover:text-slate-200";
+            }
+        };
+
+        window.handleLogin = async () => {
+            const name = document.getElementById('login-name').value.trim();
+            if(!name) return showCustomModal(window.appState.lang === 'hi' ? "त्रुटि" : "Error", window.appState.lang === 'hi' ? "कृपया अपना नाम दर्ज करें।" : "Please enter your name.");
+            if(!window.appState.user) return;
+            
+            const uid = window.appState.user.uid;
+            const userData = { id: uid, name: name, role: window.appState.role, canRetake: true, createdAt: serverTimestamp() };
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', uid), userData);
+            window.appState.dbUser = userData;
+            
+            document.getElementById('user-info').classList.replace('hidden', 'flex');
+            document.getElementById('user-name-display').innerText = `${name} (${window.appState.role})`;
+            routeUser();
+        };
+
+        function routeUser() {
+            const u = window.appState.dbUser;
+            if(!u) return;
+            if(u.role === 'AUTHORITY') return switchView('view-dashboard');
+            
+            const latest = window.appState.attempts.filter(a => a.userId === u.id).sort((a,b) => b.startTime - a.startTime)[0];
+            if(latest && latest.status === 'ACTIVE') { window.appState.activeAttempt = latest; switchView('view-exam'); }
+            else if (latest && latest.status === 'TERMINATED' && !u.canRetake) { window.appState.activeAttempt = latest; showResultView(); }
+            else { switchView('view-instructions'); }
+        }
+
+        document.getElementById('logout-btn').addEventListener('click', () => window.location.reload());
+
+        // --- EXAM ENGINE ---
+        window.acceptAndStartExam = async () => {
+            try { 
+                await document.documentElement.requestFullscreen(); 
+                window.appState.isFullscreenSupported = true;
+            } catch(e) { 
+                window.appState.isFullscreenSupported = false;
+            }
+            
+            const uid = window.appState.user.uid;
+            const attemptId = `att_${Date.now()}`;
+            const newAttempt = { id: attemptId, userId: uid, userName: window.appState.dbUser.name, status: 'ACTIVE', score: 0, totalQuestions: 10, startTime: Date.now(), language: window.appState.lang };
+            
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'attempts', attemptId), newAttempt);
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', uid), { canRetake: false });
+            
+            window.appState.activeAttempt = newAttempt;
+            window.appState.examQuestions = shuffleArray(QUESTION_BANK).slice(0, 10).map(q => ({ q, opts: shuffleArray(q.options[window.appState.lang]) }));
+            window.appState.currentQIndex = 0; window.appState.score = 0; window.appState.examActive = true;
+            
+            switchView('view-exam'); loadQuestion();
+        };
+
+        const terminateAction = (rEn, rHi) => {
+            if(!window.appState.examActive) return;
+            terminateExam(window.appState.lang === 'hi' ? rHi : rEn);
+        };
+
+        document.addEventListener('fullscreenchange', () => { if (window.appState.examActive && window.appState.isFullscreenSupported && !document.fullscreenElement) terminateAction("Exited Fullscreen Mode", "फुलस्क्रीन मोड से बाहर निकलना"); });
+        document.addEventListener('visibilitychange', () => { if(window.appState.examActive && document.hidden) terminateAction("Browser Background / Tab Switch", "टैब बदलना या ब्राउज़र छिपाना"); });
+        window.addEventListener('blur', () => { if(window.appState.examActive) terminateAction("Lost Window Focus", "विंडो से फोकस हटना"); });
+        document.addEventListener('copy', (e) => { if(window.appState.examActive) { e.preventDefault(); terminateAction("Copy Attempt", "कॉपी करने का प्रयास"); }});
+        
+        document.addEventListener('keydown', (e) => {
+            if(window.appState.examActive) {
+                if(e.key === 'F12' || (e.ctrlKey && e.shiftKey && (e.key === 'I' || e.key === 'C' || e.key === 'J'))) {
+                    e.preventDefault(); terminateAction("Developer Tools Access", "डेवलपर टूल्स खोलने का प्रयास (चीटिंग)");
+                }
+                if (e.ctrlKey || e.metaKey || e.altKey) {
+                    e.preventDefault(); terminateAction("Prohibited Keyboard Shortcut", "प्रतिबंधित कीबोर्ड शॉर्टकट का उपयोग");
+                }
+            }
+        });
+
+        // --- QUESTION & TIMER ---
+        function loadQuestion() {
+            if(!window.appState.examActive) return;
+            const qObj = window.appState.examQuestions[window.appState.currentQIndex];
+            if(!qObj) return;
+
+            // Timer Restart Logic (Fully Fixed)
+            if (window.appState.examTimer) {
+                clearInterval(window.appState.examTimer);
+            }
+            window.appState.timeLeft = 30; // Reset exactly to 30
+
+            document.getElementById('exam-q-num').innerText = window.appState.currentQIndex + 1;
+            document.getElementById('exam-q-text').innerText = qObj.q.text[window.appState.lang];
+            
+            const optContainer = document.getElementById('exam-options');
+            optContainer.innerHTML = '';
+            qObj.opts.forEach((opt, idx) => {
+                const char = String.fromCharCode(65 + idx);
+                optContainer.innerHTML += `
+                    <button onclick="handleAnswer(${opt.correct})" class="text-left p-5 sm:p-6 rounded-2xl border border-slate-700 bg-slate-800/60 hover:bg-cyan-900/40 hover:border-cyan-500 hover:shadow-[0_0_15px_rgba(8,145,178,0.5)] transition-all group flex items-center gap-4 w-full">
+                        <div class="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-900 border border-slate-600 flex items-center justify-center text-slate-300 group-hover:bg-cyan-500/20 group-hover:text-cyan-400 group-hover:border-cyan-400 shrink-0 text-lg sm:text-xl font-bold transition-colors shadow-inner">
+                            ${char}
+                        </div>
+                        <span class="text-lg sm:text-xl text-slate-200 font-medium">${opt.text}</span>
+                    </button>
+                `;
+            });
+            document.getElementById('exam-progress').style.width = `${(window.appState.currentQIndex / 10) * 100}%`;
+            readVoice(qObj.q.text[window.appState.lang]);
+            
+            // Start the Timer explicitly
+            startTimer();
+        }
+
+        function startTimer() {
+            updateTimerUI(); // Update UI immediately at 30
+            window.appState.examTimer = setInterval(() => {
+                window.appState.timeLeft--;
+                updateTimerUI();
+                
+                // If timeout happens, auto-next (Auto forward behavior)
+                if(window.appState.timeLeft <= 0) {
+                    clearInterval(window.appState.examTimer); // Stop timer immediately
+                    handleAnswer(false); // False because time ran out (wrong answer)
+                }
+            }, 1000);
+        }
+
+        function updateTimerUI() {
+            const tBox = document.getElementById('timer-box');
+            document.getElementById('exam-timer').innerText = window.appState.timeLeft + 's';
+            
+            tBox.className = "flex items-center gap-2 sm:gap-3 px-5 py-2.5 sm:px-6 sm:py-3 rounded-xl border shadow-lg transition-all duration-300";
+            
+            if (window.appState.timeLeft > 10) {
+                tBox.classList.add('bg-green-950/40', 'border-green-800', 'text-green-400');
+                tBox.style.boxShadow = "0 0 15px rgba(74, 222, 128, 0.1)";
+            } else if (window.appState.timeLeft > 5) {
+                tBox.classList.add('bg-yellow-900/50', 'border-yellow-600', 'text-yellow-400');
+                tBox.style.boxShadow = "0 0 20px rgba(250, 204, 21, 0.4)";
+            } else {
+                tBox.classList.add('bg-red-900/80', 'border-red-500', 'text-white', 'animate-pulse');
+                tBox.style.boxShadow = "0 0 25px rgba(239, 68, 68, 0.8)";
+            }
+        }
+
+        window.handleAnswer = (isCorrect) => {
+            if(!window.appState.examActive) return;
+            
+            // Stop timer as soon as user answers or it timeouts
+            clearInterval(window.appState.examTimer);
+
+            // Increase score if correct
+            if(isCorrect) window.appState.score++;
+            
+            window.appState.currentQIndex++;
+            
+            // Check if all 10 questions are done
+            if(window.appState.currentQIndex >= 10) {
+                showSubmitConfirmation(); // Show confirmation step instead of closing immediately
+            } else {
+                loadQuestion(); // Load next question
+            }
+        };
+
+        function showSubmitConfirmation() {
+            // Stop Voice
+            window.appState.voiceSynth.cancel();
+            // Show confirmation screen
+            switchView('view-confirm-submit');
+        }
+
+        window.toggleVoice = () => {
+            window.appState.isMuted = !window.appState.isMuted;
+            const btn = document.getElementById('btn-voice');
+            if(window.appState.isMuted) {
+                window.appState.voiceSynth.cancel();
+                btn.innerHTML = `<svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path></svg>`;
+            } else {
+                btn.innerHTML = `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5 10H7L11 6V18L7 14H5V10Z"></path></svg>`;
+                const qObj = window.appState.examQuestions[window.appState.currentQIndex];
+                if(qObj) readVoice(qObj.q.text[window.appState.lang]);
+            }
+        };
+
+        function readVoice(text) {
+            if(window.appState.isMuted) return;
+            window.appState.voiceSynth.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = window.appState.lang === 'hi' ? 'hi-IN' : 'en-US';
+            window.appState.voiceSynth.speak(utterance);
+        }
+
+        async function terminateExam(reason) {
+            window.appState.examActive = false; clearInterval(window.appState.examTimer); window.appState.voiceSynth.cancel();
+            if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+            const att = window.appState.activeAttempt;
+            if(!att) return;
+            att.status = 'TERMINATED'; att.violationReason = reason;
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'attempts', att.id), { status: 'TERMINATED', violationReason: reason, endTime: Date.now() });
+            showResultView();
+        }
+
+        // Changed: now called from the "Confirm Submit" button
+        window.completeExam = async () => {
+            window.appState.examActive = false; 
+            if (document.fullscreenElement) document.exitFullscreen().catch(()=>{});
+            
+            const att = window.appState.activeAttempt;
+            if(!att) return;
+            att.status = 'COMPLETED'; att.score = window.appState.score;
+            await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'attempts', att.id), { status: 'COMPLETED', score: att.score, endTime: Date.now() });
+            showResultView();
+        }
+
+        // --- RESULT / CERTIFICATE VIEW ---
+        function showResultView() {
+            switchView('view-result');
+            const att = window.appState.activeAttempt;
+            const t = i18n[window.appState.lang];
+            const isTerminated = att.status === 'TERMINATED';
+            
+            const termCont = document.getElementById('res-terminated-container');
+            const certCont = document.getElementById('res-certificate-container');
+
+            if(isTerminated) {
+                termCont.classList.remove('hidden'); certCont.classList.add('hidden');
+                document.getElementById('res-title').innerText = t.termTitle;
+                document.getElementById('res-msg').innerText = t.termMsg;
+                document.getElementById('res-log').innerText = `[LOG]: ${att.violationReason}`;
+                
+                const btn = document.getElementById('btn-retake');
+                if(window.appState.dbUser?.canRetake) { btn.innerText = t.startAgain; btn.classList.remove('hidden'); }
+                else { btn.classList.add('hidden'); }
+            } else {
+                termCont.classList.add('hidden'); certCont.classList.remove('hidden');
+                
+                document.getElementById('cert-name').innerText = window.appState.dbUser.name;
+                document.getElementById('cert-score').innerText = att.score;
+                
+                const d = new Date();
+                const dateStr = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'long', year: 'numeric' });
+                document.getElementById('cert-date').innerText = dateStr;
+            }
+        }
+        window.resetToInstructions = () => switchView('view-instructions');
+
+        // --- DASHBOARD ---
+        function renderDashboard() {
+            if(window.appState.role !== 'AUTHORITY') return;
+            const t = i18n[window.appState.lang];
+            const tbody = document.getElementById('dash-tbody');
+            tbody.innerHTML = '';
+            
+            const attempts = [...window.appState.attempts].sort((a,b) => b.startTime - a.startTime);
+            let aC = 0; let tC = 0;
+            
+            if(attempts.length === 0) tbody.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-slate-500 font-medium">No records found.</td></tr>`;
+
+            attempts.forEach(att => {
+                if(att.status === 'ACTIVE') aC++; if(att.status === 'TERMINATED') tC++;
+                const uD = window.appState.users.find(u => u.id === att.userId);
+                
+                let sB = att.status === 'ACTIVE' ? `<span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border bg-cyan-500/10 text-cyan-400 border-cyan-500/20 shadow-md"><span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>${t.active}</span>`
+                       : att.status === 'TERMINATED' ? `<span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border bg-red-500/10 text-red-500 border-red-500/20 shadow-md">⚠ ${t.term}</span>`
+                       : `<span class="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold border bg-green-500/10 text-green-400 border-green-500/20 shadow-md">✓ ${t.comp}</span>`;
+
+                let aCol = att.status === 'TERMINATED' ? `<div class="flex flex-col gap-1 items-start"><span class="text-xs text-red-400 bg-red-950/50 px-2 py-1 rounded border border-red-900/50">${att.violationReason||'Unknown'}</span>${uD && !uD.canRetake ? `<button onclick="authorizeRetake('${att.userId}')" class="mt-2 px-3 py-1.5 bg-slate-700 hover:bg-cyan-600 hover:text-white border border-slate-600 text-xs font-bold rounded-lg transition-all shadow-md">${t.authReq}</button>` : `<span class="mt-1 text-xs text-green-400 font-bold">✓ ${t.authorized}</span>`}</div>`
+                         : att.status === 'COMPLETED' ? `<span class="font-black text-lg text-cyan-400 bg-cyan-950/40 px-4 py-2 rounded-lg border border-cyan-800 shadow-inner">${att.score}/10</span>`
+                         : `<span class="text-cyan-600 text-sm font-semibold animate-pulse">Monitoring Live...</span>`;
+
+                const dStr = new Date(att.startTime).toLocaleTimeString();
+                tbody.innerHTML += `<tr class="hover:bg-slate-800/40 transition-colors"><td class="p-5 border-b border-slate-800/60"><div class="font-bold text-slate-100 text-base">${att.userName}</div><div class="text-xs text-slate-500 font-mono mt-1">${att.userId.substring(0,8)}...</div></td><td class="p-5 border-b border-slate-800/60 text-slate-400 font-medium">${dStr}</td><td class="p-5 border-b border-slate-800/60">${sB}</td><td class="p-5 border-b border-slate-800/60">${aCol}</td></tr>`;
+            });
+            document.getElementById('dash-active-cnt').innerText = `● Active: ${aC}`; document.getElementById('dash-term-cnt').innerText = `● Terminated: ${tC}`;
+        }
+        window.authorizeRetake = async (userId) => await updateDoc(doc(db, 'artifacts', appId, 'public', 'data', 'users', userId), { canRetake: true });
+
+        // --- PWA इंस्टॉल ---
+        let dP;
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault(); dP = e;
+            const b = document.getElementById('pwa-install-btn'); b.classList.remove('hidden');
+            b.addEventListener('click', async () => { dP.prompt(); const { outcome } = await dP.userChoice; if (outcome === 'accepted') b.classList.add('hidden'); dP = null; });
+        });
+
+        // --- FIREBASE INIT ---
+        const initApp = async () => {
+            try { if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) await signInWithCustomToken(auth, __initial_auth_token); else await signInAnonymously(auth); } catch (err) {}
+            onAuthStateChanged(auth, (user) => {
+                if (user) {
+                    window.appState.user = user;
+                    onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'users'), (snap) => {
+                        const u = snap.docs.map(d => d.data()); window.appState.users = u;
+                        const me = u.find(x => x.id === user.uid);
+                        if(me) { window.appState.dbUser = me; if(document.getElementById('view-result').classList.contains('active')) showResultView(); }
+                        renderDashboard();
+                    });
+                    onSnapshot(collection(db, 'artifacts', appId, 'public', 'data', 'attempts'), (snap) => {
+                        const a = snap.docs.map(d => d.data()); window.appState.attempts = a;
+                        if(window.appState.activeAttempt) {
+                            const u = a.find(x => x.id === window.appState.activeAttempt.id);
+                            if(u && u.status !== window.appState.activeAttempt.status) { window.appState.activeAttempt = u; if(u.status !== 'ACTIVE') showResultView(); }
+                        }
+                        renderDashboard();
+                    });
+                }
+            });
+        };
+        initApp();
+    </script>
+</body>
+</html>
