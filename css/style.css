@@ -1,0 +1,485 @@
+/* =========================================================
+   EXAMORA
+   Main / Global Stylesheet
+   File: css/style.css
+   ========================================================= */
+
+
+/* =========================
+   1. CSS VARIABLES
+========================= */
+
+:root {
+
+    /* Colors */
+    --primary: #2563eb;
+    --primary-dark: #1d4ed8;
+    --secondary: #06b6d4;
+
+    --background: #080b12;
+    --surface: #111827;
+    --surface-light: #1f2937;
+
+    --text: #ffffff;
+    --text-secondary: #d1d5db;
+    --text-muted: #9ca3af;
+
+    --border: rgba(255, 255, 255, 0.08);
+
+    /* Spacing */
+    --space-xs: 4px;
+    --space-sm: 8px;
+    --space-md: 16px;
+    --space-lg: 24px;
+    --space-xl: 40px;
+    --space-xxl: 64px;
+
+    /* Border Radius */
+    --radius-sm: 8px;
+    --radius-md: 12px;
+    --radius-lg: 18px;
+    --radius-xl: 24px;
+
+    /* Container */
+    --container-width: 1200px;
+
+    /* Transition */
+    --transition-fast: 0.2s ease;
+    --transition: 0.3s ease;
+
+}
+
+
+/* =========================
+   2. GLOBAL RESET
+========================= */
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+
+/* =========================
+   3. HTML
+========================= */
+
+html {
+    scroll-behavior: smooth;
+}
+
+
+/* =========================
+   4. BODY
+========================= */
+
+body {
+
+    min-height: 100vh;
+
+    background: var(--background);
+    color: var(--text);
+
+    font-family:
+        Arial,
+        Helvetica,
+        sans-serif;
+
+    font-size: 16px;
+    line-height: 1.6;
+
+    overflow-x: hidden;
+
+}
+
+
+/* =========================
+   5. LINKS
+========================= */
+
+a {
+
+    color: inherit;
+
+    text-decoration: none;
+
+    transition:
+        color var(--transition-fast),
+        opacity var(--transition-fast);
+
+}
+
+
+/* =========================
+   6. BUTTONS
+========================= */
+
+button {
+
+    border: none;
+
+    background: none;
+
+    color: inherit;
+
+    font: inherit;
+
+    cursor: pointer;
+
+}
+
+
+/* =========================
+   7. FORM ELEMENTS
+========================= */
+
+input,
+textarea,
+select {
+
+    font: inherit;
+
+}
+
+
+/* =========================
+   8. IMAGES
+========================= */
+
+img {
+
+    display: block;
+
+    max-width: 100%;
+
+    height: auto;
+
+}
+
+
+/* =========================
+   9. COMMON CONTAINER
+========================= */
+
+.container {
+
+    width: min(
+        calc(100% - 32px),
+        var(--container-width)
+    );
+
+    margin-inline: auto;
+
+}
+
+
+/* =========================
+   10. COMMON SECTION
+========================= */
+
+.section {
+
+    width: 100%;
+
+    padding:
+        var(--space-xxl)
+        0;
+
+}
+
+
+/* =========================
+   11. SECTION HEADER
+========================= */
+
+.section-header {
+
+    text-align: center;
+
+    margin-bottom: var(--space-xl);
+
+}
+
+
+.section-label {
+
+    display: inline-block;
+
+    margin-bottom: var(--space-sm);
+
+    color: var(--secondary);
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+    letter-spacing: 0.5px;
+
+}
+
+
+.section-title {
+
+    margin-bottom: var(--space-sm);
+
+    font-size: clamp(
+        28px,
+        4vw,
+        42px
+    );
+
+    line-height: 1.2;
+
+}
+
+
+.section-description {
+
+    max-width: 650px;
+
+    margin-inline: auto;
+
+    color: var(--text-muted);
+
+}
+
+
+/* =========================
+   12. COMMON GRID
+========================= */
+
+.grid {
+
+    display: grid;
+
+    gap: var(--space-lg);
+
+}
+
+
+/* =========================
+   13. COMMON CARD
+========================= */
+
+.card {
+
+    background: var(--surface);
+
+    border: 1px solid var(--border);
+
+    border-radius: var(--radius-md);
+
+    transition:
+        transform var(--transition),
+        border-color var(--transition),
+        box-shadow var(--transition);
+
+}
+
+
+.card:hover {
+
+    transform: translateY(-4px);
+
+    border-color:
+        rgba(37, 99, 235, 0.4);
+
+}
+
+
+/* =========================
+   14. COMMON BUTTON
+========================= */
+
+.btn {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    min-height: 44px;
+
+    padding:
+        10px
+        20px;
+
+    border-radius: var(--radius-sm);
+
+    font-weight: 600;
+
+    transition:
+        transform var(--transition),
+        background var(--transition),
+        opacity var(--transition);
+
+}
+
+
+.btn:hover {
+
+    transform: translateY(-2px);
+
+}
+
+
+.btn-primary {
+
+    background: var(--primary);
+
+    color: #ffffff;
+
+}
+
+
+.btn-primary:hover {
+
+    background: var(--primary-dark);
+
+}
+
+
+.btn-secondary {
+
+    background: var(--surface-light);
+
+    color: var(--text);
+
+}
+
+
+/* =========================
+   15. HIDDEN
+========================= */
+
+.hidden {
+
+    display: none !important;
+
+}
+
+
+/* =========================
+   16. TEXT UTILITIES
+========================= */
+
+.text-center {
+
+    text-align: center;
+
+}
+
+
+.text-muted {
+
+    color: var(--text-muted);
+
+}
+
+
+/* =========================
+   17. FOCUS
+========================= */
+
+:focus-visible {
+
+    outline: 2px solid var(--secondary);
+
+    outline-offset: 3px;
+
+}
+
+
+/* =========================
+   18. SELECTION
+========================= */
+
+::selection {
+
+    background: var(--primary);
+
+    color: #ffffff;
+
+}
+
+
+/* =========================
+   19. SCROLLBAR
+========================= */
+
+::-webkit-scrollbar {
+
+    width: 8px;
+
+}
+
+
+::-webkit-scrollbar-track {
+
+    background: var(--background);
+
+}
+
+
+::-webkit-scrollbar-thumb {
+
+    background: var(--surface-light);
+
+    border-radius: 10px;
+
+}
+
+
+/* =========================
+   20. MOBILE
+========================= */
+
+@media (max-width: 768px) {
+
+    .container {
+
+        width: min(
+            calc(100% - 24px),
+            var(--container-width)
+        );
+
+    }
+
+    .section {
+
+        padding:
+            var(--space-xl)
+            0;
+
+    }
+
+}
+
+
+/* =========================
+   21. REDUCED MOTION
+========================= */
+
+@media (prefers-reduced-motion: reduce) {
+
+    html {
+
+        scroll-behavior: auto;
+
+    }
+
+    *,
+    *::before,
+    *::after {
+
+        animation-duration: 0.01ms !important;
+
+        animation-iteration-count: 1 !important;
+
+        transition-duration: 0.01ms !important;
+
+    }
+
+}
